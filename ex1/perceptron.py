@@ -4,10 +4,9 @@
 第1回演習問題
 """
 import numpy as np
-import matplotlib as mpl
-mpl.use('Agg')
 import matplotlib.pyplot as plt
 from keras.datasets import mnist
+from loadnpy import load
 
 
 ##### データの取得
@@ -39,6 +38,7 @@ def error_function(x, y):
 
 ##### パラメータの初期値
 w = np.random.normal(0, 0.3, d+1)
+# w = load('weight.npy')
 
 ########## 確率的勾配降下法によるパラメータ推定
 e = []
@@ -47,7 +47,7 @@ error = []
 error_test = []
 
 step = 0
-num_epoch = 10
+num_epoch = 100
 
 eta = 0.01
 
@@ -78,6 +78,8 @@ for epoch in range(0, num_epoch):
     print("epoch {} | loss {}".format(epoch,sum(e)/n))
     e = []
 
+
+
     ##### テスト誤差
     for j in range(0, n_test):        
         
@@ -95,6 +97,10 @@ plt.plot(error_test, label="test", lw=3)     #オレンジ線
 plt.grid()
 plt.legend(fontsize =16)
 plt.savefig("./error.pdf", transparent=True)
+plt.show()
+
+#save weight
+np.save('weight.npy',w)
 
 
 
