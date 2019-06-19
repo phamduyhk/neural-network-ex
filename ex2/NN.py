@@ -43,7 +43,7 @@ def ReLU(x):
     gradient = 0
     if x > 0:
         value = x
-        gradient = 0
+        gradient = 1
     return value, gradient
 
 
@@ -85,6 +85,7 @@ def backward(w, delta, derivative):
     # 課題1(e)
     # 逆伝播のプログラムを書く
 
+
     return
 
 
@@ -116,20 +117,20 @@ for epoch in range(0, num_epoch):
         # 入力から中間層へ
         z1, u1 = forward(xi, w, ReLU)
         # 中間層から出力層へ
-        z2 = softmax(np.dot(v, z1))
+        z2 = softmax(np.dot(z1,v))
         # 誤差評価
         e.append(CrossEntoropy(z2, yi))
 
         # 逆伝播
-        delta = softmax(np.dot(v, z1))-yi
+        delta = softmax(np.dot(z1,v))-yi
         derivative = u1
         # パラメータの更新
         print(v.shape)
         print(delta.shape)
         print(z1.shape)
         print(np.dot(delta,).shape)
-        v = v - eta_t * np.dot(z1,delta)
-        w = w - eta_t * np.dot((np.dot(v, delta)*u1), z1)
+        v = v - eta_t * np.dot(delta,z1)
+        w = w - eta_t * np.dot( (np.dot(v,(delta*derivative) ) ),x)
         # ここまで
 
     # training error
