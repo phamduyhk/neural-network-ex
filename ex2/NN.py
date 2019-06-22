@@ -85,7 +85,8 @@ start = time.time()
 q = 200
 w = np.random.normal(0, 0.3, size=(q, d+1))
 v = np.random.normal(0, 0.3, size=(m, q+1))
-# option to load weight from file (if file exist)
+
+# # option to load weight from file (if file exist)
 # w = np.load('w_weight.npy')
 # v = np.load('v_weight.npy')
 
@@ -145,7 +146,7 @@ for epoch in range(0, num_epoch):
     print("        | test err {}".format(sum(e_test)/n_test))
     e_test = []
 end = time.time()
-print("excute time {}".format(end-start))
+print("実行時間： {}".format(end-start))
 # 誤差関数のプロット
 plt.clf()
 plt.plot(error, label="training", lw=3)  # 青線
