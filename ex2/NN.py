@@ -3,11 +3,11 @@
 """
 第2回演習問題
 """
-import numpy as np
-import matplotlib.pyplot as plt
-import seaborn as sns
-from keras.utils.np_utils import to_categorical
 from keras.datasets import mnist
+from keras.utils.np_utils import to_categorical
+import seaborn as sns
+import matplotlib.pyplot as plt
+import numpy as np
 
 # データの取得
 # クラス数
@@ -47,16 +47,11 @@ def ReLU(x):
     return value, gradient
 
 
-def exp(x):
-    return np.exp(x)
-
-
 def softmax(x):
     # 課題1(b)
     # ソフトマックス関数を返すプログラムを書く
-    # expArray = np.apply_along_axis(lambda a: exp(a), 0, x)
-    # return (1/np.sum(expArray))*expArray
-    return np.exp(x)/np.sum(np.exp(x))
+    e = np.exp(x)
+    return e/np.sum(e)
 
 
 def CrossEntoropy(x, y):
@@ -68,7 +63,6 @@ def CrossEntoropy(x, y):
 def forward(x, w, fncs):
     # 課題1(d)
     # 順伝播のプログラムを書く
-    # 活性化関数(fncs)の出力
     v = np.dot(w, x)
     z = [1]
     dz = []
@@ -84,15 +78,15 @@ def forward(x, w, fncs):
 def backward(w, delta, derivative):
     # 課題1(e)
     # 逆伝播のプログラムを書く
-
-
-    return
+    return np.dot(w.T, delta)*derivative
 
 
 # 中間層のユニット数とパラメータの初期値
 q = 200
 w = np.random.normal(0, 0.3, size=(q, d+1))
 v = np.random.normal(0, 0.3, size=(m, q+1))
+# w = np.load('w_weight.npy')
+# v = np.load('v_weight.npy')
 
 # 確率的勾配降下法によるパラメータ推定
 e = []
@@ -100,7 +94,7 @@ e_test = []
 error = []
 error_test = []
 
-num_epoch = 10
+num_epoch = 1
 
 eta = 0.1
 
@@ -114,27 +108,29 @@ for epoch in range(0, num_epoch):
 
         # 課題2 ここから
         # 順伝播
-        # 入力から中間層へ
         z1, u1 = forward(xi, w, ReLU)
-        # 中間層から出力層へ
-        z2 = softmax(np.dot(z1,v))
+        z2 = softmax(np.dot(v, z1))
+
         # 誤差評価
         e.append(CrossEntoropy(z2, yi))
 
         # 逆伝播
-        delta = softmax(np.dot(z1,v))-yi
-        derivative = u1
+        delta = (z2 - yi).reshape(m, 1)
+        derivative = u1.reshape(q, 1)
+        V = v[:, 1:]
+        delta2 = backward(V, delta, derivative)
+        z1 = z1.reshape(q+1, 1)
+        x = xi.reshape(d+1, 1)
         # パラメータの更新
-        print(v.shape)
-        print(delta.shape)
-        print(z1.shape)
-        print(np.dot(delta,).shape)
-        v = v - eta_t * np.dot(delta,z1)
-        w = w - eta_t * np.dot( (np.dot(v,(delta*derivative) ) ),x)
+        v -= eta_t*np.dot(delta, z1.T)
+        w -= eta_t*np.dot(delta2, x.T)
+        # print("v {} | w {}".format(v,w))
+
         # ここまで
 
     # training error
-    error.append(sum(e)/n)
+    error.append(sum(e)/n) 
+    print("epoch {} | err {}".format(epoch, sum(e)/n))
     e = []
 
     # test error
@@ -148,15 +144,21 @@ for epoch in range(0, num_epoch):
         e_test.append(CrossEntoropy(z2, yi))
 
     error_test.append(sum(e_test)/n_test)
+    print("        | test err {}".format(sum(e_test)/n_test))
     e_test = []
 
 # 誤差関数のプロット
 plt.clf()
 plt.plot(error, label="training", lw=3)  # 青線
-plt.plot(error_test, label="test", lw=3)  # オレンジ線
+# plt.plot(error_test, label="test", lw=3)  # オレンジ線
 plt.grid()
 plt.legend(fontsize=16)
 plt.savefig("./error.pdf")
+plt.show()
+
+#save weight
+np.save('v_weight.npy', v)
+np.save('w_weight.npy', w)
 
 # 確率が高いクラスにデータを分類
 # モデルの出力を評価
@@ -172,32 +174,30 @@ for j in range(0, n_test):
 
 predict = np.argmax(prob, 1)
 
-# 課題3
-# confusion matrixを完成させる
-ConfMat = np.zeros((m, m))
+# # 課題3
+# # confusion matrixを完成させる
+# ConfMat = np.zeros((m, m))
 
-plt.clf()
-fig, ax = plt.subplots(figsize=(5, 5), tight_layout=True)
-fig.show()
-sns.heatmap(ConfMat.astype(dtype=int), linewidths=1,
-            annot=True, fmt="1", cbar=False, cmap="Blues")
-ax.set_xlabel(xlabel="Predict", fontsize=18)
-ax.set_ylabel(ylabel="True", fontsize=18)
-plt.savefig("./confusion.pdf", bbox_inches="tight", transparent=True)
+# plt.clf()
+# fig, ax = plt.subplots(figsize=(5, 5), tight_layout=True)
+# fig.show()
+# sns.heatmap(ConfMat.astype(dtype=int), linewidths=1,
+#             annot=True, fmt="1", cbar=False, cmap="Blues")
+# ax.set_xlabel(xlabel="Predict", fontsize=18)
+# ax.set_ylabel(ylabel="True", fontsize=18)
+# plt.savefig("./confusion.pdf", bbox_inches="tight", transparent=True)
 
-# 誤分類結果のプロット
-for i in range(m):
-    idx_true = (y_test[:, i] == 1)
-    for j in range(m):
-        if j != i:
-            idx_predict = (predict == j)
-            for l in np.where(idx_true*idx_predict == True)[0]:
-                plt.clf()
-                D = np.reshape(x_test[l, :], (28, 28))
-                sns.heatmap(D, cbar=False, cmap="Blues", square=True)
-                plt.axis("off")
-                plt.title('{} to {}'.format(i, j))
-                plt.savefig("./misslabeled{}.pdf".format(l),
-                            bbox_inches='tight', transparent=True)
-
-# plt.show()
+# # 誤分類結果のプロット
+# for i in range(m):
+#     idx_true = (y_test[:, i] == 1)
+#     for j in range(m):
+#         if j != i:
+#             idx_predict = (predict == j)
+#             for l in np.where(idx_true*idx_predict == True)[0]:
+#                 plt.clf()
+#                 D = np.reshape(x_test[l, :], (28, 28))
+#                 sns.heatmap(D, cbar=False, cmap="Blues", square=True)
+#                 plt.axis("off")
+#                 plt.title('{} to {}'.format(i, j))
+#                 plt.savefig("./misslabeled{}.pdf".format(l),
+#                             bbox_inches='tight', transparent=True)
