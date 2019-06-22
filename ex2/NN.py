@@ -8,7 +8,7 @@ from keras.utils.np_utils import to_categorical
 import seaborn as sns
 import matplotlib.pyplot as plt
 import numpy as np
-
+import time
 # データの取得
 # クラス数
 m = 4
@@ -80,7 +80,7 @@ def backward(w, delta, derivative):
     # 逆伝播のプログラムを書く
     return np.dot(w.T, delta)*derivative
 
-
+start = time.time()
 # 中間層のユニット数とパラメータの初期値
 q = 200
 w = np.random.normal(0, 0.3, size=(q, d+1))
@@ -94,7 +94,7 @@ e_test = []
 error = []
 error_test = []
 
-num_epoch = 1
+num_epoch = 10
 
 eta = 0.1
 
@@ -115,15 +115,21 @@ for epoch in range(0, num_epoch):
         e.append(CrossEntoropy(z2, yi))
 
         # 逆伝播
-        delta = (z2 - yi).reshape(m, 1)
-        derivative = u1.reshape(q, 1)
+        # delta = (z2 - yi).reshape(m, 1)
+        # derivative = u1.reshape(q, 1)
+        # V = v[:, 1:]
+        # delta2 = backward(V, delta, derivative)
+        # z1 = z1.reshape(q+1, 1)
+        # x = xi.reshape(d+1, 1)
+        delta = z2 - yi
+        derivative = u1
         V = v[:, 1:]
-        delta2 = backward(V, delta, derivative)
-        z1 = z1.reshape(q+1, 1)
-        x = xi.reshape(d+1, 1)
+        delta2 = backward(V,delta,derivative)
         # パラメータの更新
-        v -= eta_t*np.dot(delta, z1.T)
-        w -= eta_t*np.dot(delta2, x.T)
+        # v -= eta_t*np.dot(delta, z1.T)
+        # w -= eta_t*np.dot(delta2, x.T)
+        v -= eta_t*np.outer(delta, z1)
+        w -= eta_t*np.outer(delta2, xi)
         # print("v {} | w {}".format(v,w))
 
         # ここまで
@@ -146,11 +152,12 @@ for epoch in range(0, num_epoch):
     error_test.append(sum(e_test)/n_test)
     print("        | test err {}".format(sum(e_test)/n_test))
     e_test = []
-
+end = time.time()
+print("excute time {}".format(end-start))
 # 誤差関数のプロット
 plt.clf()
 plt.plot(error, label="training", lw=3)  # 青線
-# plt.plot(error_test, label="test", lw=3)  # オレンジ線
+plt.plot(error_test, label="test", lw=3)  # オレンジ線
 plt.grid()
 plt.legend(fontsize=16)
 plt.savefig("./error.pdf")
