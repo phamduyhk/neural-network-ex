@@ -37,8 +37,8 @@ def error_function(x, y):
     return (-y*np.log(fx)-(1-y)*np.log(1-fx))
 
 ##### パラメータの初期値
-w = np.random.normal(0, 0.3, d+1)
-# w = load('weight.npy')
+# w = np.random.normal(0, 0.3, d+1)
+w = load('weight.npy')
 
 ########## 確率的勾配降下法によるパラメータ推定
 e = []
@@ -47,7 +47,7 @@ error = []
 error_test = []
 
 step = 0
-num_epoch = 100
+num_epoch = 10
 
 eta = 0.01
 
@@ -75,7 +75,7 @@ for epoch in range(0, num_epoch):
     
     ##### エポックごとの訓練誤差
     error.append(sum(e)/n)
-    print("epoch {} | loss {}".format(epoch,sum(e)/n))
+    print("epoch {} | err {}".format(epoch,sum(e)/n))
     e = []
 
 
@@ -87,8 +87,8 @@ for epoch in range(0, num_epoch):
         yi = np.array(y_test[j], float)
         
         e_test.append(error_function(np.dot(w, xi), yi))
-    
     error_test.append(sum(e_test)/n_test)
+    print("        | test err {}".format(sum(e_test)/n_test))
     e_test = []
 
 ########## 誤差関数のプロット
