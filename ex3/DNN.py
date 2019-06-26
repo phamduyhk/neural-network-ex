@@ -37,7 +37,8 @@ np.random.seed(123)
 ##### 活性化関数, 誤差関数, 順伝播, 逆伝播
 def sigmoid(x):
     value = 1/(1+np.exp(-x))
-    gradient = np.exp(-x) / ((1+np.exp(-x))**2)
+    # gradient = np.exp(-x) / ((1+np.exp(-x))**2)
+    gradient = value*(1-value)
     return value,gradient
 
 def ReLU(x):
@@ -46,6 +47,11 @@ def ReLU(x):
     if x > 0:
         value = x
         gradient = 1
+    return value, gradient
+
+def tanh(x):
+    value = np.tanh(x)
+    gradient = 1 - value**2
     return value, gradient
 
 def softmax(x):
@@ -106,8 +112,8 @@ for epoch in range(0, num_epoch):
         yi = y_train[i, :]
 
         ##### 順伝播
-        z1, u1 = forward(xi, w1, sigmoid)
-        z2, u2 = forward(z1, w2, ReLU)
+        z1, u1 = forward(xi, w1, ReLU)
+        z2, u2 = forward(z1, w2, tanh)
         z3 = softmax(np.dot(w3, z2))
         ##### 誤差評価
         e.append(CrossEntoropy(z3, yi))
