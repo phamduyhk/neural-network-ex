@@ -112,8 +112,8 @@ for epoch in range(0, num_epoch):
         yi = y_train[i, :]
 
         ##### 順伝播
-        z1, u1 = forward(xi, w1, ReLU)
-        z2, u2 = forward(z1, w2, tanh)
+        z1, u1 = forward(xi, w1, sigmoid)
+        z2, u2 = forward(z1, w2, ReLU)
         z3 = softmax(np.dot(w3, z2))
         ##### 誤差評価
         e.append(CrossEntoropy(z3, yi))
@@ -139,7 +139,7 @@ for epoch in range(0, num_epoch):
         xi = np.append(1, x_test[j, :])
         yi = y_test[j, :]
         ##### 順伝播
-        z1, u1 = forward(xi, w1, ReLU)
+        z1, u1 = forward(xi, w1, sigmoid)
         z2, u2 = forward(z1, w2, ReLU)
         z3 = softmax(np.dot(w3, z2))
         ##### テスト誤差: 誤差をe_testにappendする
@@ -166,33 +166,33 @@ for j in range(0, n_test):
     yi = y_test[j, :]
     
     # テストデータに対する順伝播: 順伝播の結果をprobにappendする
-    z1, u1 = forward(xi, w1, ReLU)
+    z1, u1 = forward(xi, w1, sigmoid)
     z2, u2 = forward(z1, w2, ReLU)
     z3 = softmax(np.dot(w3, z2))
     prob.append(z3)
    
 predict = np.argmax(prob, 1)
 
-# ##### confusion matrixと誤分類結果のプロット
-# ConfMat = np.zeros((m, m))
-# for i in range(m):
-#     idx_true = (y_test[:, i]==1)
-#     for j in range(m):
-#         idx_predict = (predict==j)
-#         ConfMat[i, j] = sum(idx_true*idx_predict)
-#         if j != i:
-#             for l in np.where(idx_true*idx_predict == True)[0]:
-#                 plt.clf()
-#                 D = np.reshape(x_test[l, :], (28, 28))
-#                 sns.heatmap(D, cbar =False, cmap="Blues", square=True)
-#                 plt.axis("off")
-#                 plt.title('{} to {}'.format(i, j))
-#                 plt.savefig("./misslabeled{}.pdf".format(l), bbox_inches='tight', transparent=True)
+##### confusion matrixと誤分類結果のプロット
+ConfMat = np.zeros((m, m))
+for i in range(m):
+    idx_true = (y_test[:, i]==1)
+    for j in range(m):
+        idx_predict = (predict==j)
+        ConfMat[i, j] = sum(idx_true*idx_predict)
+        if j != i:
+            for l in np.where(idx_true*idx_predict == True)[0]:
+                plt.clf()
+                D = np.reshape(x_test[l, :], (28, 28))
+                sns.heatmap(D, cbar =False, cmap="Blues", square=True)
+                plt.axis("off")
+                plt.title('{} to {}'.format(i, j))
+                plt.savefig("./misslabeled{}.pdf".format(l), bbox_inches='tight', transparent=True)
 
-# plt.clf()
-# fig, ax = plt.subplots(figsize=(5,5),tight_layout=True)
-# fig.show()
-# sns.heatmap(ConfMat.astype(dtype = int), linewidths=1, annot = True, fmt="1", cbar =False, cmap="Blues")
-# ax.set_xlabel(xlabel="Predict", fontsize=18)
-# ax.set_ylabel(ylabel="True", fontsize=18)
-# plt.savefig("./confusion.pdf", bbox_inches="tight", transparent=True)
+plt.clf()
+fig, ax = plt.subplots(figsize=(5,5),tight_layout=True)
+fig.show()
+sns.heatmap(ConfMat.astype(dtype = int), linewidths=1, annot = True, fmt="1", cbar =False, cmap="Blues")
+ax.set_xlabel(xlabel="Predict", fontsize=18)
+ax.set_ylabel(ylabel="True", fontsize=18)
+plt.savefig("./confusion.pdf", bbox_inches="tight", transparent=True)
