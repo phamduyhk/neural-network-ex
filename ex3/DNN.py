@@ -93,8 +93,8 @@ w2 = np.random.normal(0, 0.3, size=(q2, q1+1))
 w3 = np.random.normal(0, 0.3, size=(m, q2+1))
 
 ########## 確率的勾配降下法によるパラメータ推定
-# num_epoch = 50
-num_epoch = 10
+num_epoch = 50
+# num_epoch = 10
 
 eta = 10**(-2)
 
