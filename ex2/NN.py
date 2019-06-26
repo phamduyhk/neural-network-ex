@@ -46,7 +46,6 @@ def ReLU(x):
         gradient = 1
     return value, gradient
 
-
 def softmax(x):
     # 課題1(b)
     # ソフトマックス関数を返すプログラムを書く
@@ -82,6 +81,11 @@ def backward(w, delta, derivative):
 
 start = time.time()
 # 中間層のユニット数とパラメータの初期値
+"""
+parameter
+z1 = wx         (q,)
+z2 = y = vz1    (m,)
+"""
 q = 200
 w = np.random.normal(0, 0.3, size=(q, d+1))
 v = np.random.normal(0, 0.3, size=(m, q+1))
