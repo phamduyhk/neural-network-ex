@@ -33,7 +33,7 @@ def sigmoid(x):
 
 def ErrorFunction(x, y):
     # returnの後に二乗誤差関数を返すプログラムを書く
-    return
+    return np.dot((y-x).T,y-x)
 
 def forward(x, param, fncs):
     tmp = np.dot(param, x)
@@ -44,17 +44,18 @@ def forward(x, param, fncs):
 def backward(param, delta, derivative):
     return np.dot(param.T, delta)*derivative
 
-def adam(param, m, v, error, t, 
+def adam(param, m, v, error, t,
          alpha = 0.001, beta1 = 0.9, beta2 = 0.999, tol = 10**(-8)):
     # returnの後にadamによるパラメータ更新のプログラムを書く
-    m = beta1*m+(1-beta1)*t
-    v = beta2*v+(1-beta2)*np.outer(t,t)
+    grad = error
+    m = beta1*m+(1.0-beta1)*grad
+    v = beta2*v+(1.0-beta2)*grad**2
     
-    m = m/(1-beta1)
-    v = v/(1-beta2)
+    m_h = m/(1.0-beta1**t)
+    v_h = v/(1.0-beta2**t)
 
-    param -= alpha*(m/np.sqrt(v)+tol)
-    return param
+    param -= alpha*(m_h/(np.sqrt(v_h)+tol))
+    return param, m ,v
 
 #####中間層のユニット数とパラメータの初期値
 N1 = 64
@@ -81,7 +82,8 @@ for epoch in range(0, num_epoch):
     
     for i in index:
         ##### データに加えるノイズ
-        noise = np.random.rand(d)
+        var = 0.3
+        noise = np.random.normal(0,var,size=(d,))
         xi = np.append(1, x_train[i, :] + noise)
         
         ##### 順伝播
@@ -95,18 +97,25 @@ for epoch in range(0, num_epoch):
         delta2 = z2 - x_train[i, :]
         delta1 = backward(w1[:, 1:], delta2, u1)
         
+        # gradient
+        grad1 = np.outer(delta2,z1)
+        grad0 = np.outer(delta1,xi)
+        
         ##### adamによるパラメータの更新
+        w1,m1,v1 = adam(w1,m1,v1,grad1,epoch+1)
+        w0,m0,v0 = adam(w0,m0,v0,grad0,epoch+1)
         
 
-    
     ##### training error
     error.append(sum(e)/n)
+    e_train_2_print = sum(e)/n
     e = []
     
     ##### test error
     for j in range(0, n_test):
         ##### データに加えるノイズ
-        noise = np.random.rand(d)
+        var = 0.3
+        noise = np.random.normal(0,var,size=(d,))
         xi = np.append(1, x_test[j, :] + noise)
         
         z1, u1 = forward(xi, w0, sigmoid)
@@ -115,6 +124,8 @@ for epoch in range(0, num_epoch):
         e_test.append(ErrorFunction(z2, x_test[j, :]))
     
     error_test.append(sum(e_test)/n_test)
+    e_test_2_print = sum(e_test)/n_test
+    print("epoch {} | err train {} | err test {}".format(epoch,e_train_2_print,e_test_2_print))
     e_test = []
 
 
@@ -126,7 +137,7 @@ plt.legend(fontsize =16)
 plt.savefig("./error.pdf", transparent=True)
 
 ##### 0からn-1までの自然数のうち, 好きな数をjに代入する
-j = np.random(n-1)
+j = 7
 
 xi = np.append(1, x_test[j, :] + np.random.normal(0, 0.05, size= d))
 z1, u1 = forward(xi, w0, sigmoid)
