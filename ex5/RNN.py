@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from keras.utils.np_utils import to_categorical
 from keras.datasets import mnist
-
+import time 
 # データの取得
 # クラス数を定義
 m = 4
@@ -82,23 +82,20 @@ def forward_RNN(x, z, w_in, w_hidden, fncs):
 
 
 def backward(delta, w_hidden, w_out, delta_out, derivative_out):
-    print("delta {}, w {}, w_out {}, delta_out {}, der {}".format(
-        delta.shape, w_hidden.shape, w_out.shape, delta_out.shape, derivative_out.shape))
+    # print("delta {}, w {}, w_out {}, delta_out {}, der {}".format(
+    #     delta.shape, w_hidden.shape, w_out.shape, delta_out.shape, derivative_out.shape))
     tmp = np.dot(w_hidden.T, delta)+np.dot(w_out.T, delta_out)
-    print("tmp {}".format(tmp.shape))
+    # print("tmp {}".format(tmp.shape))
     return np.dot(tmp, derivative_out)
 
 
-def adam(param, m, v, error, t,
+def adam(param, m, v, grad, t,
          alpha=0.001, beta1=0.9, beta2=0.999, tol=10**(-8)):
     # returnの後にadamによるパラメータ更新のプログラムを書く
-    grad = error
     m = beta1*m+(1.0-beta1)*grad
-    v = beta2*v+(1.0-beta2)*grad**2
-
+    v = beta2*v+(1.0-beta2)*grad*grad
     m_h = m/(1.0-beta1**t)
     v_h = v/(1.0-beta2**t)
-
     param -= alpha*(m_h/(np.sqrt(v_h)+tol))
     return param, m, v
 
@@ -110,6 +107,13 @@ w_in = np.random.normal(0, 0.3, size=(q, d+1))
 w_out = np.random.normal(0, 0.3, size=(m, q+1))
 w_hidden = np.random.normal(0, 0.3, size=(q, q+1))
 
+# parameter for adam
+m_in = np.zeros(shape=(q, d+1))
+v_in = np.zeros(shape=(q, d+1))
+m_out = np.zeros(shape=(m, q+1))
+v_out = np.zeros(shape=(m, q+1))
+m_hid = np.zeros(shape=(q, q+1))
+v_hid = np.zeros(shape=(q, q+1))
 # 誤差逆伝播法によるパラメータ推定
 num_epoch = 10
 eta = 10**(-2)
@@ -119,12 +123,12 @@ e_test = []
 error = []
 error_test = []
 
-
+start = time.time()
 for epoch in range(0, num_epoch):
     index = np.random.permutation(n)
     Z = np.zeros(shape=(d+1, q+1))
     U = np.zeros(shape=(d+1, q))
-    G = np.zeros(shape=(d+1,m))
+    G = np.zeros(shape=(d+1, m))
     eta_t = eta/(epoch+1)
 
     for i in index:
@@ -148,20 +152,26 @@ for epoch in range(0, num_epoch):
         delta = np.zeros(shape=(d+1, q))
         delta[d] = np.zeros(q)
         for j in range(d)[::-1]:
-            delta[j] = backward(delta[j+1], w_hidden,
+            delta[j] = backward(delta[j+1], w_hidden[:,1:],
                                 w_out[:, 1:], delta_out, U[j])
 
-        # delta = delta[1:,:].T
         # パラメータの更新
         x = np.zeros(shape=(d,d+1))
         for j in range(d):
             x[j,] = np.append(1,xi[j,])
         delta = delta[:d,:]
-        print("delta {}".format(delta.shape))
         w_in -= eta_t*np.dot(delta.T,x)
         w_hidden -= eta_t*np.dot(delta.T, Z[1:,: ])
-        print("Z {}, G {}".format(Z.shape,G.shape))
         w_out -= eta_t*np.dot(G.T, Z)
+
+        #adam 
+        #gradien fot adam
+        # grad_in = np.dot(delta.T,x)
+        # grad_hidden = np.dot(delta.T,Z[1:,:])
+        # grad_out = np.dot(G.T,Z)
+        # w_in,m_in,v_in = adam(w_in,m_in,v_in,grad_in,epoch+1)
+        # w_hidden,m_hid,v_hid = adam(w_hidden,m_hid,v_hid,grad_hidden,epoch+1)
+        # w_out, m_out, v_out = adam(w_out,m_out,v_out,grad_out,epoch+1)
 
     ##### エポックごとの訓練誤差: eの平均をerrorにappendする
     error.append(sum(e)/n)
@@ -170,15 +180,15 @@ for epoch in range(0, num_epoch):
 
     # : 誤差をe_testにappendする
     # test error
-    for i_test in range(0, n_test):
+    for i in range(0, n_test):
         xi = x_test[i, :, :]
         yi = y_test[i, :]
         # 順伝播
-        Z[0] = np.zeros(q)
+        Z[0] = np.append(1,np.zeros(q))
         for j in range(d):
             Z[j+1], U[j] = forward_RNN(np.append(1, xi[j, ]),
                                        Z[j], w_in, w_hidden, sigmoid)
-        z_out = softmax(np.dot(w_out, np.append(1, Z[d])))
+        z_out = softmax(np.dot(w_out, Z[d]))
         ##### 誤差評価: 誤差をeにappendする
         e_test.append(CrossEntoropy(z_out, yi))
 
@@ -186,7 +196,8 @@ for epoch in range(0, num_epoch):
     error_test.append(sum(e_test)/n_test)
     print("        | test err {}".format(sum(e_test)/n_test))
     e_test = []
-
+end = time.time()
+print("実行時間： {}".format(end-start))
 # 誤差関数のプロット
 plt.plot(error, label="training", lw=3)  # 青線
 plt.plot(error_test, label="test", lw=3)  # オレンジ線
@@ -201,13 +212,13 @@ for j in range(0, n_test):
     yi = y_test[j, :]
 
     # 順伝播
-    Z[0] = np.zeros(q)
+    Z[0] = np.append(1,np.zeros(q))
     for j in range(d):
-        Z[j+1], U[j] = forward(np.append(1, xi[j, ]),
+        Z[j+1], U[j] = forward_RNN(np.append(1, xi[j, ]),
                                Z[j], w_in, w_hidden, sigmoid)
 
-    z_out = softmax(np.dot(w_out, np.append(1, Z[d])))
-
+    z_out = softmax(np.dot(w_out, Z[d]))
+    # z_out = softmax(np.dot(w_out, np.append(1, Z[d])))
     prob.append(z_out)
 
 predict = np.argmax(prob, 1)
