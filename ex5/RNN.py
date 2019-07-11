@@ -27,6 +27,7 @@ y_test = y_test[y_test < m]
 y_test = to_categorical(y_test, m)
 
 n, d, _ = x_train.shape
+print("n={}, d={}".format(n,d))
 n_test, _, _ = x_test.shape
 
 np.random.seed(123)
@@ -69,9 +70,7 @@ def forward(x, param, fncs):
 
 def forward_RNN(x, z, w_in, w_hidden, fncs):
     tmp1 = np.dot(w_in, x)
-    # print("w_in {}, x{}, z {}".format(w_in.shape,x.shape,z.shape))
     tmp2 = np.dot(w_hidden, z)
-    # print("tmp1 {}, tmp2 {}".format(tmp1.shape,tmp2.shape))
     # z = np.append(1,fncs(tmp1+tmp2)[0])
     z = fncs(tmp1+tmp2)[0]
     dz = fncs(tmp1+tmp2)[1]
@@ -83,7 +82,7 @@ def backward(delta, w_hidden, w_out, delta_out, derivative_out):
     #     delta.shape, w_hidden.shape, w_out.shape, delta_out.shape, derivative_out.shape))
     tmp = np.dot(w_hidden.T, delta)+np.dot(w_out.T, delta_out)
     # print("tmp {}".format(tmp.shape))
-    return np.dot(tmp, derivative_out)
+    return tmp*derivative_out
 
 
 def adam(param, m, v, grad, t,
@@ -98,11 +97,11 @@ def adam(param, m, v, grad, t,
 
 
 # 中間層のユニット数とパラメータの初期値
-q = 32
+q = 64
 
-w_in = np.random.normal(0, 0.03, size=(q, d+1))
-w_out = np.random.normal(0, 0.03, size=(m, q+1))
-w_hidden = np.random.normal(0, 0.03, size=(q, q))
+w_in = np.random.normal(0, 0.3, size=(q, d+1))
+w_out = np.random.normal(0, 0.3, size=(m, q+1))
+w_hidden = np.random.normal(0, 0.3, size=(q, q))
 
 # parameter for adam
 m_in = np.zeros(shape=(q, d+1))
@@ -111,8 +110,14 @@ m_out = np.zeros(shape=(m, q+1))
 v_out = np.zeros(shape=(m, q+1))
 m_hid = np.zeros(shape=(q, q))
 v_hid = np.zeros(shape=(q, q))
+
+# parameter for data
+Z = np.zeros(shape=(d+1, q))
+U = np.zeros(shape=(d+1, q))
+G = np.zeros(shape=(d+1, m))
+
 # 誤差逆伝播法によるパラメータ推定
-num_epoch = 2
+num_epoch = 10
 eta = 10**(-2)
 
 e = []
@@ -123,9 +128,6 @@ error_test = []
 start = time.time()
 for epoch in range(0, num_epoch):
     index = np.random.permutation(n)
-    Z = np.zeros(shape=(d+1, q))
-    U = np.zeros(shape=(d+1, q))
-    G = np.zeros(shape=(d+1, m))
     eta_t = eta/(epoch+1)
 
     for i in index:
@@ -146,42 +148,40 @@ for epoch in range(0, num_epoch):
         ##### 誤差評価: 誤差をeにappendする
         e.append(CrossEntoropy(z_out, yi))
         # 逆伝播
-        delta_out = z_out - yi
         delta = np.zeros(shape=(d+2, q))
         delta[d+1] = np.zeros(q)
         for j in range(d+1)[::-1]:
             delta[j] = backward(delta[j+1], w_hidden,
-                                w_out[:, 1:], delta_out, U[j])
+                                w_out[:, 1:], G[j], U[j])
 
         # パラメータの更新
         X = np.zeros(shape=(d,d+1))
-        for j in range(d):
-            X[j,] = np.append(1,xi[j,])
         Z_b = np.zeros(shape=(d+1,q+1))
         for j in range(d):
+            X[j,] = np.append(1,xi[j,])
             Z_b[j] = np.append(1,Z[j])
         delta = delta[1:d+1,:]
-        # w_in -= eta_t*np.dot(delta.T,X)
-        # w_hidden -= eta_t*np.dot(delta.T, Z[:d, :])
-        # w_out -= eta_t*np.dot(G.T, Z_b)
-        # w_out -= eta_t*np.outer(z_out.T, np.append(1, Z[d]))
 
-        #adam 
-        #gradien fot adam
+        # SGD (勾配降下法)
+        # w_in -= eta_t*np.dot(delta.T,X)
+        # w_hidden -= eta_t*np.dot(delta.T, Z_b[:d, 1:])
+        # w_out -= eta_t*np.dot(G[1:,:].T, Z_b[1:,:])
+
+        # gradient fot adam
         grad_in = np.dot(delta.T,X)
         grad_hidden = np.dot(delta.T,Z[:d,:])
         grad_out = np.dot(G.T,Z_b)
+        # adam 
         w_in,m_in,v_in = adam(w_in,m_in,v_in,grad_in,epoch+1)
         w_hidden,m_hid,v_hid = adam(w_hidden,m_hid,v_hid,grad_hidden,epoch+1)
         w_out, m_out, v_out = adam(w_out,m_out,v_out,grad_out,epoch+1)
 
     ##### エポックごとの訓練誤差: eの平均をerrorにappendする
     error.append(sum(e)/n)
-    print("epoch {} | err {}".format(epoch, sum(e)/n))
+    # print("epoch {} | err {}".format(epoch, sum(e)/n))
     e = []
 
     # : 誤差をe_testにappendする
-    # test error
     for i in range(0, n_test):
         xi = x_test[i, :, :]
         yi = y_test[i, :]
@@ -190,14 +190,13 @@ for epoch in range(0, num_epoch):
         for j in range(d):
             Z[j+1], U[j] = forward_RNN(np.append(1, xi[j, ]),
                                        Z[j], w_in, w_hidden, sigmoid)
-        # z_out = softmax(np.dot(w_out, Z[d]))
         z_out = softmax(np.dot(w_out, np.append(1, Z[d])))
         ##### 誤差評価: 誤差をeにappendする
         e_test.append(CrossEntoropy(z_out, yi))
 
     ##### エポックごとの訓練誤差: e_testの平均をerror_testにappendする
     error_test.append(sum(e_test)/n_test)
-    print("        | test err {}".format(sum(e_test)/n_test))
+    print(" epoch {} | test err {}".format(epoch, sum(e_test)/n_test))
     e_test = []
 end = time.time()
 print("実行時間： {}".format(end-start))
@@ -220,7 +219,6 @@ for j in range(0, n_test):
         Z[j+1], U[j] = forward_RNN(np.append(1, xi[j, ]),
                                Z[j], w_in, w_hidden, sigmoid)
 
-    # z_out = softmax(np.dot(w_out, Z[d]))
     z_out = softmax(np.dot(w_out, np.append(1, Z[d])))
     prob.append(z_out)
 
@@ -238,10 +236,10 @@ for i in range(m):
                 plt.clf()
                 D = x_test[l, :, :]
                 sns.heatmap(D, cbar=False, cmap="Blues", square=True)
-                plt.axis("off")
-                plt.title('{} to {}'.format(i, j))
-                plt.savefig("./misslabeled{}.pdf".format(l),
-                            bbox_inches='tight', transparent=True)
+                # plt.axis("off")
+                # plt.title('{} to {}'.format(i, j))
+                # plt.savefig("./misslabeled{}.pdf".format(l),
+                #             bbox_inches='tight', transparent=True)
 
 plt.clf()
 fig, ax = plt.subplots(figsize=(5, 5), tight_layout=True)
