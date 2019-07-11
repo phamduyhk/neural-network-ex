@@ -11,7 +11,7 @@ from keras.datasets import mnist
 import time 
 # データの取得
 # クラス数を定義
-m = 3
+m = 4
 
 (x_train, y_train), (x_test, y_test) = mnist.load_data()
 x_train = x_train.astype('float32') / 255.
@@ -29,6 +29,7 @@ y_test = to_categorical(y_test, m)
 n, d, _ = x_train.shape
 n_test, _, _ = x_test.shape
 
+print("n={},d={}".format(n, d))
 np.random.seed(123)
 
 ##### 活性化関数, 誤差関数, 順伝播, 逆伝播
@@ -40,8 +41,11 @@ def sigmoid(x):
 
 
 def ReLU(x):
-    value = x*(x > 0)
-    gradient = 1*(x > 0)
+    value = 0
+    gradient = 0
+    if x > 0:
+        value = x
+        gradient = 1
     return value, gradient
 
 
@@ -72,8 +76,7 @@ def forward_RNN(x, z, w_in, w_hidden, fncs):
     # print("w_in {}, x{}, z {}".format(w_in.shape,x.shape,z.shape))
     tmp2 = np.dot(w_hidden, z)
     # print("tmp1 {}, tmp2 {}".format(tmp1.shape,tmp2.shape))
-    # z = np.append(1,fncs(tmp1+tmp2)[0])
-    z = fncs(tmp1+tmp2)[0]
+    z = np.append(1,fncs(tmp1+tmp2)[0])
     dz = fncs(tmp1+tmp2)[1]
     return z, dz
 
@@ -98,21 +101,21 @@ def adam(param, m, v, grad, t,
 
 
 # 中間層のユニット数とパラメータの初期値
-q = 32
+q = 64
 
-w_in = np.random.normal(0, 0.03, size=(q, d+1))
-w_out = np.random.normal(0, 0.03, size=(m, q+1))
-w_hidden = np.random.normal(0, 0.03, size=(q, q))
+w_in = np.random.normal(0, 0.3, size=(q, d+1))
+w_out = np.random.normal(0, 0.3, size=(m, q+1))
+w_hidden = np.random.normal(0, 0.3, size=(q, q+1))
 
 # parameter for adam
 m_in = np.zeros(shape=(q, d+1))
 v_in = np.zeros(shape=(q, d+1))
 m_out = np.zeros(shape=(m, q+1))
 v_out = np.zeros(shape=(m, q+1))
-m_hid = np.zeros(shape=(q, q))
-v_hid = np.zeros(shape=(q, q))
+m_hid = np.zeros(shape=(q, q+1))
+v_hid = np.zeros(shape=(q, q+1))
 # 誤差逆伝播法によるパラメータ推定
-num_epoch = 2
+num_epoch = 10
 eta = 10**(-2)
 
 e = []
@@ -123,7 +126,7 @@ error_test = []
 start = time.time()
 for epoch in range(0, num_epoch):
     index = np.random.permutation(n)
-    Z = np.zeros(shape=(d+1, q))
+    Z = np.zeros(shape=(d+1, q+1))
     U = np.zeros(shape=(d+1, q))
     G = np.zeros(shape=(d+1, m))
     eta_t = eta/(epoch+1)
@@ -133,47 +136,42 @@ for epoch in range(0, num_epoch):
         yi = y_train[i, :]
 
         # 順伝播
-        Z[0] = np.zeros(q)
-        G[0] = softmax(np.dot(w_out, np.append(1,Z[0])))-yi
+        Z[0] = np.append(1,np.zeros(q))
+        G[0] = softmax(np.dot(w_out, Z[0]))-yi
         for j in range(d):
             Z[j+1], U[j] = forward_RNN(np.append(1, xi[j, ]),
                                        Z[j], w_in, w_hidden, sigmoid)
-            G[j+1] = softmax(np.dot(w_out, np.append(1, Z[j+1])))-yi
-
-        z_out = softmax(np.dot(w_out, np.append(1, Z[d])))
-        # z_out = softmax(np.dot(w_out, Z[d]))
+            G[j+1] = softmax(np.dot(w_out,Z[j+1]))-yi
+             
+        z_out = softmax(np.dot(w_out, Z[d]))
 
         ##### 誤差評価: 誤差をeにappendする
         e.append(CrossEntoropy(z_out, yi))
         # 逆伝播
         delta_out = z_out - yi
-        delta = np.zeros(shape=(d+2, q))
-        delta[d+1] = np.zeros(q)
-        for j in range(d+1)[::-1]:
-            delta[j] = backward(delta[j+1], w_hidden,
+        delta = np.zeros(shape=(d+1, q))
+        delta[d] = np.zeros(q)
+        for j in range(d)[::-1]:
+            delta[j] = backward(delta[j+1], w_hidden[:,1:],
                                 w_out[:, 1:], delta_out, U[j])
 
         # パラメータの更新
-        X = np.zeros(shape=(d,d+1))
+        x = np.zeros(shape=(d,d+1))
         for j in range(d):
-            X[j,] = np.append(1,xi[j,])
-        Z_b = np.zeros(shape=(d+1,q+1))
-        for j in range(d):
-            Z_b[j] = np.append(1,Z[j])
-        delta = delta[1:d+1,:]
-        # w_in -= eta_t*np.dot(delta.T,X)
-        # w_hidden -= eta_t*np.dot(delta.T, Z[:d, :])
-        # w_out -= eta_t*np.dot(G.T, Z_b)
-        # w_out -= eta_t*np.outer(z_out.T, np.append(1, Z[d]))
+            x[j,] = np.append(1,xi[j,])
+        delta = delta[:d,:]
+        w_in -= eta_t*np.dot(delta.T,x)
+        w_hidden -= eta_t*np.dot(delta.T, Z[1:,: ])
+        w_out -= eta_t*np.dot(G.T, Z)
 
         #adam 
         #gradien fot adam
-        grad_in = np.dot(delta.T,X)
-        grad_hidden = np.dot(delta.T,Z[:d,:])
-        grad_out = np.dot(G.T,Z_b)
-        w_in,m_in,v_in = adam(w_in,m_in,v_in,grad_in,epoch+1)
-        w_hidden,m_hid,v_hid = adam(w_hidden,m_hid,v_hid,grad_hidden,epoch+1)
-        w_out, m_out, v_out = adam(w_out,m_out,v_out,grad_out,epoch+1)
+        # grad_in = np.dot(delta.T,x)
+        # grad_hidden = np.dot(delta.T,Z[1:,:])
+        # grad_out = np.dot(G.T,Z)
+        # w_in,m_in,v_in = adam(w_in,m_in,v_in,grad_in,epoch+1)
+        # w_hidden,m_hid,v_hid = adam(w_hidden,m_hid,v_hid,grad_hidden,epoch+1)
+        # w_out, m_out, v_out = adam(w_out,m_out,v_out,grad_out,epoch+1)
 
     ##### エポックごとの訓練誤差: eの平均をerrorにappendする
     error.append(sum(e)/n)
@@ -186,12 +184,11 @@ for epoch in range(0, num_epoch):
         xi = x_test[i, :, :]
         yi = y_test[i, :]
         # 順伝播
-        Z[0] = np.zeros(q)
+        Z[0] = np.append(1,np.zeros(q))
         for j in range(d):
             Z[j+1], U[j] = forward_RNN(np.append(1, xi[j, ]),
                                        Z[j], w_in, w_hidden, sigmoid)
-        # z_out = softmax(np.dot(w_out, Z[d]))
-        z_out = softmax(np.dot(w_out, np.append(1, Z[d])))
+        z_out = softmax(np.dot(w_out, Z[d]))
         ##### 誤差評価: 誤差をeにappendする
         e_test.append(CrossEntoropy(z_out, yi))
 
@@ -215,13 +212,13 @@ for j in range(0, n_test):
     yi = y_test[j, :]
 
     # 順伝播
-    Z[0] = np.zeros(q)
+    Z[0] = np.append(1,np.zeros(q))
     for j in range(d):
         Z[j+1], U[j] = forward_RNN(np.append(1, xi[j, ]),
                                Z[j], w_in, w_hidden, sigmoid)
 
-    # z_out = softmax(np.dot(w_out, Z[d]))
-    z_out = softmax(np.dot(w_out, np.append(1, Z[d])))
+    z_out = softmax(np.dot(w_out, Z[d]))
+    # z_out = softmax(np.dot(w_out, np.append(1, Z[d])))
     prob.append(z_out)
 
 predict = np.argmax(prob, 1)

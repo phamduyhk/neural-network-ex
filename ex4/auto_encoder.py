@@ -50,7 +50,7 @@ def adam(param, m, v, error, t,
     grad = error
     m = beta1*m+(1.0-beta1)*grad
     v = beta2*v+(1.0-beta2)*grad**2
-    
+
     m_h = m/(1.0-beta1**t)
     v_h = v/(1.0-beta2**t)
 
