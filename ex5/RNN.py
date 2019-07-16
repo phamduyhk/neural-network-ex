@@ -8,10 +8,10 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from keras.utils.np_utils import to_categorical
 from keras.datasets import mnist
-import time 
+import time
 # データの取得
 # クラス数を定義
-m = 3
+m = 4
 
 (x_train, y_train), (x_test, y_test) = mnist.load_data()
 x_train = x_train.astype('float32') / 255.
@@ -27,7 +27,7 @@ y_test = y_test[y_test < m]
 y_test = to_categorical(y_test, m)
 
 n, d, _ = x_train.shape
-print("n={}, d={}".format(n,d))
+print("n={}, d={}".format(n, d))
 n_test, _, _ = x_test.shape
 
 np.random.seed(123)
@@ -97,7 +97,7 @@ def adam(param, m, v, grad, t,
 
 
 # 中間層のユニット数とパラメータの初期値
-q = 64
+q = 200
 
 w_in = np.random.normal(0, 0.3, size=(q, d+1))
 w_out = np.random.normal(0, 0.3, size=(m, q+1))
@@ -136,7 +136,7 @@ for epoch in range(0, num_epoch):
 
         # 順伝播
         Z[0] = np.zeros(q)
-        G[0] = softmax(np.dot(w_out, np.append(1,Z[0])))-yi
+        G[0] = softmax(np.dot(w_out, np.append(1, Z[0])))-yi
         for j in range(d):
             Z[j+1], U[j] = forward_RNN(np.append(1, xi[j, ]),
                                        Z[j], w_in, w_hidden, sigmoid)
@@ -155,12 +155,12 @@ for epoch in range(0, num_epoch):
                                 w_out[:, 1:], G[j], U[j])
 
         # パラメータの更新
-        X = np.zeros(shape=(d,d+1))
-        Z_b = np.zeros(shape=(d+1,q+1))
+        X = np.zeros(shape=(d, d+1))
+        Z_b = np.zeros(shape=(d+1, q+1))
         for j in range(d):
-            X[j,] = np.append(1,xi[j,])
-            Z_b[j] = np.append(1,Z[j])
-        delta = delta[1:d+1,:]
+            X[j, ] = np.append(1, xi[j, ])
+            Z_b[j] = np.append(1, Z[j])
+        delta = delta[1:d+1, :]
 
         # SGD (勾配降下法)
         # w_in -= eta_t*np.dot(delta.T,X)
@@ -168,13 +168,14 @@ for epoch in range(0, num_epoch):
         # w_out -= eta_t*np.dot(G[1:,:].T, Z_b[1:,:])
 
         # gradient fot adam
-        grad_in = np.dot(delta.T,X)
-        grad_hidden = np.dot(delta.T,Z[:d,:])
-        grad_out = np.dot(G.T,Z_b)
-        # adam 
-        w_in,m_in,v_in = adam(w_in,m_in,v_in,grad_in,epoch+1)
-        w_hidden,m_hid,v_hid = adam(w_hidden,m_hid,v_hid,grad_hidden,epoch+1)
-        w_out, m_out, v_out = adam(w_out,m_out,v_out,grad_out,epoch+1)
+        grad_in = np.dot(delta.T, X)
+        grad_hidden = np.dot(delta.T, Z[:d, :])
+        grad_out = np.dot(G.T, Z_b)
+        # adam
+        w_in, m_in, v_in = adam(w_in, m_in, v_in, grad_in, epoch+1)
+        w_hidden, m_hid, v_hid = adam(
+            w_hidden, m_hid, v_hid, grad_hidden, epoch+1)
+        w_out, m_out, v_out = adam(w_out, m_out, v_out, grad_out, epoch+1)
 
     ##### エポックごとの訓練誤差: eの平均をerrorにappendする
     error.append(sum(e)/n)
@@ -217,7 +218,7 @@ for j in range(0, n_test):
     Z[0] = np.zeros(q)
     for j in range(d):
         Z[j+1], U[j] = forward_RNN(np.append(1, xi[j, ]),
-                               Z[j], w_in, w_hidden, sigmoid)
+                                   Z[j], w_in, w_hidden, sigmoid)
 
     z_out = softmax(np.dot(w_out, np.append(1, Z[d])))
     prob.append(z_out)
@@ -236,10 +237,10 @@ for i in range(m):
                 plt.clf()
                 D = x_test[l, :, :]
                 sns.heatmap(D, cbar=False, cmap="Blues", square=True)
-                # plt.axis("off")
-                # plt.title('{} to {}'.format(i, j))
-                # plt.savefig("./misslabeled{}.pdf".format(l),
-                #             bbox_inches='tight', transparent=True)
+                plt.axis("off")
+                plt.title('{} to {}'.format(i, j))
+                plt.savefig("./misslabeled{}.pdf".format(l),
+                            bbox_inches='tight', transparent=True)
 
 plt.clf()
 fig, ax = plt.subplots(figsize=(5, 5), tight_layout=True)

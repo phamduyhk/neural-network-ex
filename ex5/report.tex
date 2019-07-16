@@ -10,6 +10,9 @@
 \usepackage[dvipdfmx]{color}
 \usepackage{graphicx}
 \usepackage{bm}
+\usepackage[section]{placeins}
+%\usepackage[demo]{graphicx}
+\usepackage{subfig}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % format stuffs
@@ -62,30 +65,64 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \begin{center} 
-{\large \bf 知能プログラミング演習I 第1回レポート}
+{\large \bf 知能プログラミング演習I 第2レポート}
 \end{center} %
-
-\begin{flushright} 
-\today % Date
+\begin{flushright}
+  \today
+\end{flushright}
+\begin{flushright}
 \hskip 1mm
 学籍番号 % 学籍番号
+29114154 \\
 \hskip 1mm
 氏名 % 氏名
+PHAM DUY
 \end{flushright} % Name
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{実験設定}
+\begin{itemize}
+  \item 分類クラス数：4（手書きの数字：0,1,2,3)
+  \item 中間層の数：1
+  \item 中間層ごとのユニット数：200
+  \item 各層で用いた活性化関数\\
+  入力層から第１中間層への活性化関数：sigmoid関数\\
+  最後の中間層から出力層への活性化関数：ソフトマックス関数
+  \item 誤差関数：クロスエントロピー
+  \item パラメータの更新方法：adam
+  \item エポック数：10
+\end{itemize}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{結果}
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
+解析結果は以下の図１と図２で表す。
+図１は訓練誤差とテスト誤差の推移を表す。図１の縦軸は誤差であり、図１の横軸はデータのスキャン回数（epoch数）である
+図２は分類結果の数を表す。図２の縦軸はデータの実際のラベルで、図２の横軸は予測結果である。
+\begin{figure}[h]
+\centering
+\subfloat[誤差の推移]{{\includegraphics[width=7cm]{error.pdf} }}%
+\qquad
+\subfloat[confusion martix]{{\includegraphics[width=6.5cm]{confusion.pdf} }}%
+\caption{活性化関数sigmoidを用いた１０エポックでの誤差関数の推移とconfusion matrix}%
+\label{fig:example}%
+\end{figure}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{考察}
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+以上の結果より、作成したモデルでデータのスキャン回数(epoch 数)をあげるに連れて訓練誤差と テスト誤差が減少している様子が確認できる。Epoch 数が 10 以下のとき、訓練誤差とテスト誤差が急 激に減少している様子が見えるが、epoch 数が 10 以上の時、訓練誤差とテスト誤差が徐々に減少してい る。このモデルの場合、未学習と過学習現象が見えていない。\\
+confusion matrix の結果より、誤分類各ケースの中に、３を２と誤って分類されたケースが一番多い。
+また、confusion matrixの結果より、このモデルの精度は98.56\%に達しているということがわかる。\\
+\begin{figure}[h]
+\centering
+\subfloat[３を２と誤って予測された例]{{\includegraphics[width=7cm]{3to2.pdf} }}%
+\qquad
+\subfloat[１を２と誤って予測された例]{{\includegraphics[width=7cm]{1to2.pdf} }}%
+\caption{誤分類したデータの図示}%
+\label{fig:example}%
+\end{figure}
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % ここまでがレポートの記述
