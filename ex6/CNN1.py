@@ -42,7 +42,7 @@ def Convolution(img, param, bias, fncs, channel, padding, stride):
                 for p in range(filter_h):
                     for q in range(filter_w):
                         conv[c, i, j] += param[c, p, q] * image_padded[c,
-                                                                       stride * (i-1)+p, stride*(j-1)+q]+bias[c]
+                                                                       stride * (i-1)+p+1, stride*(j-1)+q+1]+bias[c]
     conv = fncs(conv)
     return conv
 
@@ -86,22 +86,22 @@ W2 = np.array([[0, 1, 0],
                [0, 1, 0]])
 W3 = np.ones((3, 3))
 w = np.array([W1, W2, W3])
-
+print(w)
 # 課題2-(b)
 # 畳み込み
 img_with_3channel = np.array([img, img, img])
 print("Img shape {}".format(img_with_3channel.shape))
+print(img_with_3channel)
 bias = np.zeros((3))
 C = Convolution(img_with_3channel, w, bias, ReLU, 3, 2, 1)
 print("Convolution shape {}".format(C.shape))
+print(C)
 
 # プーリング
 P = MaxPooling(C, 3, 3, 3)
 print("Pooling shape {}".format(P.shape))
+print(P)
 
-# transpose C and P for output (if using format (height, width, channel))
-# C = C.T
-# P = P.T
 # 結果の出力
 plt.clf()
 sns.heatmap(img, cbar=False, cmap="CMRmap", square=True)
