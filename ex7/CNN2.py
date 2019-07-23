@@ -37,16 +37,35 @@ n_test, _, _, _ = x_test.shape
 # モデルの定義: model = Model() または model = Sequential()を用いる
 model = Sequential()
 model.add(Conv2D(
-    32,  # フィルター数（出力される特徴マップのチャネル）
+    64,  # フィルター数（出力される特徴マップのチャネル）
     kernel_size=3,
-    strides=2,
     padding="same",
     activation="relu",
     input_shape=(d, d, 1)
 ))
-model.add(MaxPooling2D(pool_size=(2, 2), strides=2, padding="same"))
+model.add(Conv2D(
+    64,
+    kernel_size=3,
+    strides=(2,2),
+    padding="same",
+    activation="relu"
+))
+model.add(MaxPooling2D(pool_size=(2, 2)))
+model.add(Conv2D(
+    64,  
+    kernel_size=3,
+    padding="same",
+    activation="relu"
+))
+model.add(Conv2D(
+    64,
+    kernel_size=3,
+    padding="same",
+    activation="relu"
+))
+model.add(MaxPooling2D(pool_size=(2, 2)))
 model.add(Flatten())
-model.add(Dense(64, activation="relu"))
+model.add(Dense(128, activation="relu"))
 model.add(Dense(m, activation="softmax"))
 
 model.summary()
@@ -108,8 +127,8 @@ for i in range(m):
                 sns.heatmap(D, cbar=False, cmap="Blues", square=True)
                 plt.axis("off")
                 plt.title('{} to {}'.format(i, j))
-                # plt.savefig("./misslabeled{}.pdf".format(l),
-                #             bbox_inches='tight', transparent=True)
+                plt.savefig("./misslabeled{}.pdf".format(l),
+                            bbox_inches='tight', transparent=True)
 
 plt.clf()
 fig, ax = plt.subplots(figsize=(5, 5), tight_layout=True)
