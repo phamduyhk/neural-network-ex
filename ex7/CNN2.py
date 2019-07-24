@@ -71,8 +71,8 @@ model.add(Dense(m, activation="softmax"))
 model.summary()
 
 # モデルのプロット
-# with open("model.png","a"):
-#    plot_model(model, to_file="model.png", show_shapes=True)
+with open("model.png","a"):
+    plot_model(model, to_file="model.png", show_shapes=True)
 
 # オプティマイザの定義
 optimizer = optimizers.Adam(lr=0.001)
