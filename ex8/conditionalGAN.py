@@ -103,7 +103,6 @@ if __name__ == '__main__':
     Minibatch = 64
     Save_test_img_dir = "./"
     iteration = 3000
-    # trainning
     for ite in range(iteration):
         start = time.time()
         ite += 1
@@ -119,7 +118,8 @@ if __name__ == '__main__':
         input_noise = np.random.uniform(-1, 1, size=(Minibatch, 100))
         g_loss = c.train_on_batch(input_noise, [1] * Minibatch)
         end = time.time()
-        print("ite {}, d_loss {}, g_loss {}".format(ite,d_loss,g_loss))
-    
-    save_images(g_output, index=5, dir_path=Save_test_img_dir)
+        ets = (iteration-ite)*(end-start)
+        print("ite {}, d_loss {}, g_loss {},ETS {}".format(ite,d_loss,g_loss,ets))
+        if(ite%50==0):
+            save_images(g_output, index=ite, dir_path=Save_test_img_dir)
 

@@ -34,3 +34,8 @@ param2 = param2.reshape(32,32,1)
 x = np.random.normal(0, 0.3, size=(10))
 print(max(x))
 print(x[1:3:7])
+
+from tensorflow.python.client import device_lib
+import os
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
+device_lib.list_local_devices()
