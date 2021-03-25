@@ -12,6 +12,7 @@
 \usepackage{bm}
 \usepackage[section]{placeins}
 \usepackage{listings}
+\usepackage{url}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % format stuffs
@@ -183,17 +184,23 @@ pix2pixと同じく、画像の特徴間の変換を実行する。ウマとシ�
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{kerasを用いたGANの生成モデルの実装}
-今回ConditionalGANをKerasで実装する。
+今回ConditionalGANをKerasで実装する。\\
 \textbf{ソースコード}
 \lstinputlisting[language=Python]{conditionalGAN.py}
 
 \textbf{出力結果の例}
 \begin{figure}[h]
 \centering
-\includegraphics[width=12cm]{0100.jpg}
+\includegraphics[width=12cm]{3000.jpg}
 \caption{ConditionalGANによる画像生成の例（MNIST DATASETより）}
 \label{GAN7}
 \end{figure}
+
+\section{参考}
+今回のレポートの参考資料：\\
+\url{https://ieeexplore.ieee.org/document/8667290}\\
+\url{https://qiita.com/obarads/items/750744158da6d7980bd8}\\
+\url{https://www.imagazine.co.jp/gan%EF%BC%9A%E6%95%B5%E5%AF%BE%E7%9A%84%E7%94%9F%E6%88%90%E3%83%8D%E3%83%83%E3%83%88%E3%83%AF%E3%83%BC%E3%82%AF%E3%81%A8%E3%81%AF%E4%BD%95%E3%81%8B%E3%80%80%EF%BD%9E%E3%80%8C%E6%95%99%E5%B8%AB/}
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
